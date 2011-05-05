@@ -1,0 +1,11 @@
+1. Make connection to ip:12001 
+2. send 0 or 1. 1 means controller, 0 - view 
+3. send everything you want, views recieve all controller message, controller - all view messages.
+
+note - messages may arrive "in parts" due "how TCP stuff werkz" and proxy being dump-as-our-goverment (receive => broadcast)
+
+windows users:
+  see attached exe. sorry for size, but it contains all python awesomeness
+
+everybody else:
+  get python 2.6+ and run python setup.py

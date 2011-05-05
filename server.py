@@ -80,7 +80,7 @@ class Host(asyncore.dispatcher):
         loggin.info("closing host")
         self.close()
     def handle_error(self):
-        logging.infO("error  ?")
+        logging.info("error: %s ", self.compat_traceback())
 
 
 if __name__ == '__main__':
