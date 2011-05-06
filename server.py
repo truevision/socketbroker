@@ -4,7 +4,7 @@ import asyncore
 import collections
 import logging
 import socket
-
+import argparse
 
 MAX_MESSAGE_LENGTH = 1024
 
@@ -36,7 +36,7 @@ class RemoteClient(asyncore.dispatcher):
             client_message = client_message[1:]
        
         if len(client_message.strip()):
-            self.host.log.info("broadcasting %s from %s (%s)", client_message, self.address, self.type)
+            self.host.log.debug("broadcasting %s from %s (%s)", client_message, self.address, self.type)
             self.host.broadcast(client_message, self.type)
 
 
@@ -49,18 +49,20 @@ class RemoteClient(asyncore.dispatcher):
             message = message[0:MAX_MESSAGE_LENGTH]
         self.send(message)
     def handle_close(self):
+        self.host.log.warning("closing connection from %s", self.address)
         self.close()
 
 class Host(asyncore.dispatcher):
 
     log = logging.getLogger('Host')
 
-    def __init__(self, address=('0.0.0.0', 12001)):
+    def __init__(self, ip, port):
+        address = (ip, port)
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
         self.bind(address)
-        self.listen(1)
+        self.listen(4)
         self.remote_clients = []
 
     def handle_accept(self):
@@ -77,14 +79,25 @@ class Host(asyncore.dispatcher):
         for remote_client in self.remote_clients:
             remote_client.say(message, type)
     def handle_close(self):
-        loggin.info("closing host")
+        self.log.info("closing host")
         self.close()
     def handle_error(self):
         logging.info("error: %s ", self.compat_traceback())
 
 
+
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description = "socket message broker")
+    parser.add_argument('--port', type = int, help="port to listen", default = 1001)
+    parser.add_argument('--ip', type = str, help = "ip address to listen", default = "0.0.0.0")
+    args = parser.parse_args()
+    
     logging.basicConfig(level=logging.INFO)
     logging.info('Creating host')
-    host = Host()
-    asyncore.loop()
+    logging.info("command line arguments: %s", args)
+    try:
+        host = Host(args.ip, args.port)
+        asyncore.loop()
+    except KeyboardInterrupt as error:
+        logging.info("Got CTRL+C, shutting down gracefully")
+        asyncore.close_all()
