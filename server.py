@@ -106,21 +106,28 @@ class Broker(asyncore.dispatcher):
             self.log.debug("%d clients in pool " % (len(self.remote_clients)))
             self.log.debug("sending data %s to client %s " % (message, remote_client.address))
             remote_client.say(message, type)
+    
     def handle_close(self):
         self.log.info("closing host")
         self.close()
-    #def handle_error(self):
-    #    logging.info("error: %s ", self.compat_traceback())
+    def handle_error(self):
+        logging.critic("unhandled error: %s ",compat_traceback())
 
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description = "socket message broker")
+    logger_levels = {
+            'debug' : logging.DEBUG,
+            'info'  : logging.INFO,
+            'warn'  : logging.WARN}
+    parser = argparse.ArgumentParser(description = "Adobe Flash Socket Message broker",
+                                     epilog = "<c> SIA True-Vision http://www.true-vision.net/")
     parser.add_argument('--port', type = int, help="port to listen", default = 1001)
     parser.add_argument('--ip', type = str, help = "ip address to listen", default = "0.0.0.0")
+    parser.add_argument('--verbose', type = str, help = "verbosity level", choices = logger_levels.keys())
     args = parser.parse_args()
     
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logger_levels[args.verbose])
     logging.info('Creating host')
     logging.info("command line arguments: %s", args)
     try:
