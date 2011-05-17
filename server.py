@@ -5,7 +5,10 @@ import collections
 import logging
 import socket
 import argparse
-import asynchat 
+import asynchat
+
+from flashpolicy import PolicyDispatcher 
+
 MAX_MESSAGE_LENGTH = 1024
 
 
@@ -124,14 +127,15 @@ if __name__ == '__main__':
                                      epilog = "<c> SIA True-Vision http://www.true-vision.net/")
     parser.add_argument('--port', type = int, help="port to listen", default = 1001)
     parser.add_argument('--ip', type = str, help = "ip address to listen", default = "0.0.0.0")
-    parser.add_argument('--verbose', type = str, help = "verbosity level", choices = logger_levels.keys())
+    parser.add_argument('--verbose', type = str, help = "verbosity level", choices = logger_levels.keys(), default = 'info')
     args = parser.parse_args()
     
     logging.basicConfig(level=logger_levels[args.verbose])
     logging.info('Creating host')
     logging.info("command line arguments: %s", args)
     try:
-        host = Broker(args.ip, args.port)
+        broker = Broker(args.ip, args.port)
+        policy_server = PolicyDispatcher(args.ip, dest_port = args.port)
         asyncore.loop()
     except KeyboardInterrupt as error:
         logging.info("Got CTRL+C, shutting down gracefully")
