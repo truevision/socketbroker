@@ -5,54 +5,80 @@ import collections
 import logging
 import socket
 import argparse
-
+import asynchat 
 MAX_MESSAGE_LENGTH = 1024
 
 
-class RemoteClient(asyncore.dispatcher):
-
-    """Wraps a remote client socket."""
-
+class RemoteClient(asynchat.async_chat):
     def __init__(self, host, socket, address):
-        asyncore.dispatcher.__init__(self, socket)
+        asynchat.async_chat.__init__(self,socket)
+        self.log = logging.getLogger("client-%d" % address[1])
+        self.log.info("new client from %s" % address[0])
         self.host = host
-        self.outbox = collections.deque()
-        self.type = None 
+        self.receives = []
+        self.sends_to = []
         self.address = address
-    def say(self, message, type):
-        if type != self.type:
-            self.outbox.append(message)
-
-    def handle_read(self):
-        client_message = self.recv(MAX_MESSAGE_LENGTH)
-
-        if not self.type and client_message.startswith("1"):
-            self.type = 'controller'
-            self.host.log.info("registered %s as controller", self.address)
-            client_message = client_message[1:]
-        elif not self.type:
-            self.type = 'view'
-            self.host.log.info("registered %s as view", self.address)
-            client_message = client_message[1:]
-       
-        if len(client_message.strip()):
-            self.host.log.debug("broadcasting %s from %s (%s)", client_message, self.address, self.type)
-            self.host.broadcast(client_message, self.type)
-
-
-    def handle_write(self):
-
-        if not self.outbox:
-            return
-        message = self.outbox.popleft()
-        if len(message) > MAX_MESSAGE_LENGTH:
-            message = message[0:MAX_MESSAGE_LENGTH]
-        self.send(message)
+        self.set_terminator("\r\n")
+        self.data = ""
+    def collect_incoming_data(self, data):
+        self.log.debug("received data %s " % (self.data))
+        self.data = self.data + data
     def handle_close(self):
-        self.host.log.warning("closing connection from %s", self.address)
-        self.close()
+        asynchat.async_chat.handle_close(self)
+        self.log.info("closing connection")
+    def found_terminator(self):
+        data = self.data
+        self.log.debug("found terminator with data %s " % (self.data))
+        self.data  = ''
+        if data.startswith("broker"):
+            data = data.split(" ")
+            if len(data) != 3:
+                self.log.warn("invalid syntax %s " % (self.data)) 
+                self.push("ERROR: syntax broker {command} {value}\r\n")
+                return 
+            broker, command, value = data 
+            if command.lower() == 'receive':
+                if value.lower() in self.receives:
+                    self.log.warn("try to receive already subscribed chanell %s " % value.lower())
+                    self.push("ERROR: you already receive on channell %s\r\n" % value.lower())
+                    return
+                self.log.info("receiving on chanell %s " % (value.lower()))
+                self.receives.append(value.lower())
+                self.push("SUCCESS: receive on chanell %s \r\n" % (value))
+            elif command.lower() == "send":
+                if value.lower() in self.sends_to:
+                    self.log.warn("try to send to already sending chanell %s " % (value.lower()))
+                    self.push("ERROR: you already send on chanell %s \r\n" % value.lower())
+                    return 
+                self.log.info("send on chanell %s " % (value.lower()))
+                self.sends_to.append(value.lower())
+                self.push("SUCCESS: send to chanell %s \r\n" % (value))
+            else:
+                self.log.warn("invalid command %s " % (command.lower()))
+                self.push("ERROR: unknown command %s \r\n" % command)
+        else:
+            if len(self.sends_to) == 0:
+                self.log.warn("try to broadcast without any sender chanells")
+                self.push("ERROR: no sender chanells registred \r\n")
+                return
+            self.log.info("broadcasting to %s" % (",".join(self.sends_to)))
+            self.host.broadcast(data, self.sends_to)
+    def say(self, data, chanells):
+        read = False
+        self.log.debug("received data %s " % (data))
+        self.log.debug("chanells to send it %s " % chanells)
+        for chanell in chanells: 
+            if chanell in self.receives:
+                self.log.debug("channel %s in receiving " % chanell)
+                read = True
+                break
+        if not read:
+            self.log.debug("no valid receive chanells")
+            return 
+        self.log.debug("sending data %s to client " % data)
+        self.push(data + "\r\n")
 
-class Host(asyncore.dispatcher):
+class Broker(asyncore.dispatcher):
 
     log = logging.getLogger('Host')
 
@@ -62,7 +88,7 @@ class Host(asyncore.dispatcher):
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
         self.bind(address)
-        self.listen(4)
+        self.listen(5)
         self.remote_clients = []
 
     def handle_accept(self):
@@ -72,17 +98,19 @@ class Host(asyncore.dispatcher):
 
     def handle_read(self):
         
-        self.log.info('Received message: %s', self.read())
+        self.log.debug('received message: %s', self.read())
 
     def broadcast(self, message, type):
-        self.log.info('Broadcasting message: %s (type - %s) ', message, type)
+        self.log.info('broadcasting message: %s (chanells - %s) ', message, type)
         for remote_client in self.remote_clients:
+            self.log.debug("%d clients in pool " % (len(self.remote_clients)))
+            self.log.debug("sending data %s to client %s " % (message, remote_client.address))
             remote_client.say(message, type)
     def handle_close(self):
         self.log.info("closing host")
         self.close()
-    def handle_error(self):
-        logging.info("error: %s ", self.compat_traceback())
+    #def handle_error(self):
+    #    logging.info("error: %s ", self.compat_traceback())
 
 
 
@@ -96,7 +124,7 @@ if __name__ == '__main__':
     logging.info('Creating host')
     logging.info("command line arguments: %s", args)
     try:
-        host = Host(args.ip, args.port)
+        host = Broker(args.ip, args.port)
         asyncore.loop()
     except KeyboardInterrupt as error:
         logging.info("Got CTRL+C, shutting down gracefully")
