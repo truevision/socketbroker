@@ -1,11 +1,27 @@
-1. Make connection to ip:12001 
-2. send 0 or 1. 1 means controller, 0 - view 
-3. send everything you want, views recieve all controller message, controller - all view messages.
+Socket Broker
+=============
+ Socket Broker is "smart" Flash socket connection broker, 
+ to receive and send arbitrary text data from Flash or other enviroment via raw TCP sockets.
+ Socket broker implements Flash security policy .
 
-note - messages may arrive "in parts" due "how TCP stuff werkz" and proxy being dump-as-our-goverment (receive => broadcast)
+Usage
+====
+python server.py [-h] [--port PORT] [--ip IP] [--verbose {debug,info,warn}]
 
-windows users:
-  see attached exe. sorry for size, but it contains all python awesomeness
+optional arguments:
+  -h, --help            show help message and exit
+  --port PORT           port to listen, default = 1001
+  --ip IP               ip address to listen
+  --verbose {debug,info,warn}
+                        verbosity level
 
-everybody else:
-  get python 2.6+ and run python setup.py
+ Make connections from SWF to broker and note what chanells you want to listen and where to send data. 
+ All data from sent from client is broadcasted to all other clients subscribed to chanells where sender is sending.
+
+Controll commands (sent via TCP, response is {ERROR|SUCCESS}: {description} 
+  broker send {chanell_name}
+  broker receive {chanell_name} 
+
+
+
+
