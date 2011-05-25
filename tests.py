@@ -3,6 +3,7 @@ import socket
 from subprocess import Popen 
 import subprocess
 from time import sleep
+
 class BrokerTest(unittest.TestCase):
     def setUp(self):
         self.process = Popen(["/usr/bin/env", "python", "server.py", "--ip", "127.0.0.1"],
@@ -16,6 +17,13 @@ class BrokerTest(unittest.TestCase):
         policy = '<cross-domain-policy><allow-access-from domain="*", ports="1001" /></cross-domain-policy>' 
         self.assertEqual(data, policy)
         client.close()
+    def test_channel_one_on_one_communication(self):
+        client_first = socket.create_connection("127.0.0.1", 843)
+        client_second = socket.create_connection("127.0.0.1", 843)
+        client_first.send("broker send second")
+        status, junk = client_first.recv(1024)
+        self.assertEqual(status, "SUCCESS")
+
     def tearDown(self):
         self.process.terminate()
 if __name__ == "__main__":
