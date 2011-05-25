@@ -24,7 +24,11 @@ class RemoteClient(asynchat.async_chat):
         self.set_terminator("\r\n")
         self.data = ""
     def collect_incoming_data(self, data):
-        self.log.debug("received data %s " % (self.data))
+        if len(self.data) + len(data) > MAX_MESSAGE_LENGTH:
+            self.log.warn("message larger than %d bytes, closing connection" % (MAX_MESSAGE_LENGTH))
+            self.push("ERROR: Total message larger than %d bytes" % (MAX_MESSAGE_LENGTH)) 
+            self.handle_close()
+            self.log.debug("received data %s " % (data))
         self.data = self.data + data
     def handle_close(self):
         asynchat.async_chat.handle_close(self)
