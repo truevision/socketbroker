@@ -10,11 +10,11 @@ class RemoteClient(asynchat.async_chat):
         asynchat.async_chat.__init__(self, socket)
         self.port = port
         self.set_terminator("\x00")
-        self.set_terminator("\n")
         self.data = ""
         self.log = logging.getLogger("FlashPolicy.Client")
         self.log.info("new client")
     def collect_incoming_data(self, data):
+        self.log.debug("recieved data %s" % data)
         total_len = len(data) + len(self.data)
         if total_len > MAX_DATA_LENGTH:
             self.push("too much data. closing connection")
@@ -24,6 +24,7 @@ class RemoteClient(asynchat.async_chat):
 
         self.data = self.data + data 
     def found_terminator(self):
+        self.log.debug("found terminator")
         if 'policy-file-request' not in self.data.lower().strip():
             self.push("invalid request")
             self.log.warn("invalid request (%s)" % self.data)
