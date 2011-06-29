@@ -1,12 +1,18 @@
 Socket Broker
 =============
+
  Socket Broker is "smart" Flash socket connection broker, 
  to receive and send arbitrary text data from Flash or other enviroment via raw TCP sockets.
  Socket broker implements Flash security policy .
 
 Usage
-====
-python server.py [-h] [--port PORT] [--ip IP] [--verbose {debug,info,warn}]
+=====
+
+'''
+
+ python server.py [-h] [--port PORT] [--ip IP] [--verbose {debug,info,warn}]
+
+'''
 
 optional arguments:
   -h, --help            show help message and exit
