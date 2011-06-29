@@ -1,11 +1,10 @@
-from __future__ import print_function
-
 import asyncore
 import logging
 import argparse
 from broker import Broker
 from flashpolicy import PolicyDispatcher 
-
+from socket import error
+import sys 
 
 if __name__ == '__main__':
     logger_levels = {
@@ -23,9 +22,18 @@ if __name__ == '__main__':
     logging.info('Creating host')
     logging.info("command line arguments: %s", args)
     try:
-        broker = Broker(args.ip, args.port)
-        policy_server = PolicyDispatcher(args.ip, dest_port = args.port)
+        try:
+            broker = Broker(args.ip, args.port)
+        except error:
+            logging.critical("bind to %s:%d failed " % (args.ip, args.port))
+            sys.exit(1)
+        try:
+            policy_server = PolicyDispatcher(args.ip, dest_port = args.port)
+        except error:
+            logging.critical("bind to %s:%d failed " % (args.ip, 743))
+            sys.exit(1)
         asyncore.loop()
     except KeyboardInterrupt as error:
         logging.info("Got CTRL+C, shutting down gracefully")
         asyncore.close_all()
+        sys.exit(0)
