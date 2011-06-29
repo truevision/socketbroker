@@ -5,7 +5,7 @@ from setuptools import setup
 setup(
     name='socketbroker',
     version='0.1',
-    url='http://github.com/truevision/flask/',
+    url='http://github.com/truevision/socketbroker/',
     license='BSD',
     author='Kristaps Kulis',
     author_email='kristaps@true-vision.net',
