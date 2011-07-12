@@ -10,7 +10,8 @@ setup(
     author='Kristaps Kulis',
     author_email='kristaps@true-vision.net',
     description = "socket message broker with flash socket policy support",
-    py_modules=["socketbroker"],
+    packages=["socketbroker"],
+    scripts = ["socketbroker/socketbroker"],
     zip_safe=False,
     platforms='any',
 )
