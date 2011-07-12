@@ -77,12 +77,8 @@ class BrokerTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
         self.log.debug("send %s to %s " % (data, ','.join(chanells)))
         for client in self.clients:
             for chanell in chanells:
-                if chanell in client.receives:
-                    self.log.debug("sent to %s " % client.client_address[0])
-                    client.request.send(data)
-                else:
-                    print client.receives
-                    print chanell
+                self.log.debug("sent to %s " % client.client_address[0])
+                client.request.send(data)
 
 def start(ip, port):
     logger = logging.getLogger("BrokerTCPServer")
