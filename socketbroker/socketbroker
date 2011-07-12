@@ -15,7 +15,7 @@ if __name__ == '__main__':
                                      epilog = "<c> SIA True-Vision http://www.true-vision.net/")
     parser.add_argument('--port', type = int, help="port to listen", default = 1001)
     parser.add_argument('--ip', type = str, help = "ip address to listen", default = "0.0.0.0")
-    parser.add_argument('--verbose', type = str, help = "verbosity level", choices = logger_levels.keys(), default = 'info')
+    parser.add_argument('--verbose', type = str, help = "verbosity level", choices = logger_levels.keys(), default = 'warn')
     args = parser.parse_args()
     
     logging.basicConfig(level=logger_levels[args.verbose])
