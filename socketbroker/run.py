@@ -21,12 +21,13 @@ def main():
     logging.info("command line arguments: %s", args)
     try:
         try:
-            broker = broker.start(args.ip, args.port)
+            broker_server = broker.start(args.ip, args.port)
         except:
+            raise
             logging.critical("bind to %s:%d failed " % (args.ip, args.port))
             sys.exit(1)
         try:
-            flashpolicy = flashpolicy.start(args.ip, dest_port = args.port)
+            flashpolicy_server = flashpolicy.start(args.ip, dest_port = args.port)
         except:
             broker.shutdown()
             logging.critical("bind to %s:%d failed " % (args.ip, 743))
@@ -35,8 +36,8 @@ def main():
             pass
     except KeyboardInterrupt as error:
         logging.info("Got CTRL+C, shutting down gracefully")
-        broker.shutdown()
-        flashpolicy.shutdown()
+        broker_server.shutdown()
+        flashpolicy_server.shutdown()
         sys.exit(0)
 
 
