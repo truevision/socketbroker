@@ -44,7 +44,7 @@ class BrokerTCPHandler(SocketServer.StreamRequestHandler):
             self.handle_broker_command()
         else:
             logging.debug("sending data")
-            self.server.send(self.data , self.sends_to)
+            self.server.send(self.data + "\r\n" , self.sends_to)
     def handle_broker_command(self):
         try:
             handle, name, value = self.data.split(" ")
