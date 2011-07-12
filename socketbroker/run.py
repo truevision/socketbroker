@@ -2,10 +2,9 @@ import logging
 import argparse
 from socketbroker import broker
 from socketbroker import flashpolicy 
-from socket import error
 import sys 
 
-if __name__ == '__main__':
+def main():
     logger_levels = {
             'debug' : logging.DEBUG,
             'info'  : logging.INFO,
@@ -23,12 +22,12 @@ if __name__ == '__main__':
     try:
         try:
             broker = broker.start(args.ip, args.port)
-        except error:
+        except:
             logging.critical("bind to %s:%d failed " % (args.ip, args.port))
             sys.exit(1)
         try:
             flashpolicy = flashpolicy.start(args.ip, dest_port = args.port)
-        except error:
+        except:
             broker.shutdown()
             logging.critical("bind to %s:%d failed " % (args.ip, 743))
             sys.exit(1)
@@ -39,3 +38,7 @@ if __name__ == '__main__':
         broker.shutdown()
         flashpolicy.shutdown()
         sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
