@@ -5,6 +5,7 @@ import threading
 MAX_MESSAGE_LENGTH = 1024
 
 
+
 class BrokerTCPHandler(SocketServer.StreamRequestHandler):
     def setup(self):
         self.log = logging.getLogger("BrokerClient")
@@ -15,7 +16,7 @@ class BrokerTCPHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         self.log.debug("new client %s" % self.client_address[0])
         while True:
-            data = self.request.recv(16)
+            data = self.request.recv(1)
             if len(data) == 0:
                 continue
             self.log.debug("received %s" % data)
@@ -24,30 +25,23 @@ class BrokerTCPHandler(SocketServer.StreamRequestHandler):
                self.log.warn("buffer length larger than maximum (%d), purging buffer and closing client" % MAX_MESSAGE_LENGTH)
                self.request.send("ERROR: message larger than %d bytes" % MAX_MESSAGE_LENGTH)
                return
-            if "\r\n" in data:
-                data = data.split("\r\n")
-                self.log.debug("found seperator in data")
-                self.data = self.data + data[0]
-                self.log.debug("data %s" % self.data)
-                self.log.debug("entering handle_data")
+            self.data += data
+            if len(self.data) >= 2 and self.data[-2:] == '\r\n':
+                self.log.debug("seperator \\r\\n found")
+                self.log.debug("entering handle data")
                 self.handle_data()
-                self.log.debug("finished handle_data")
-                if len(data) == 1:
-                    data[1] = ''
-                self.log.debug("data after seperator '%s' " % data[1]) 
-                self.data = data[1]
-            else:
-                self.data += data
+                self.log.debug("finished handle data")
+                self.data = ''
     def handle_data(self):
         if self.data.startswith("broker"):
             logging.debug("broker control command")
             self.handle_broker_command()
         else:
             logging.debug("sending data")
-            self.server.send(self.data + "\r\n" , self.sends_to)
+            self.server.send(self.data , self.sends_to)
     def handle_broker_command(self):
         try:
-            handle, name, value = self.data.split(" ")
+            handle, name, value = self.data.strip("\r\n").split(" ")
         except:
             self.request.send("ERROR: invalid syntax (broker command value)\r\n")
             self.log.warn("invalid broker command syntax")
@@ -64,7 +58,7 @@ class BrokerTCPHandler(SocketServer.StreamRequestHandler):
             self.log.debug("info")
             if value.lower() == 'clients':
                 for client in self.server.clients:
-                    self.request.send("%s [send:%s] [receive:%s]" % (client.remote_address[0], ','.join(client.sends_to), ','.join(client.receives))
+                    self.request.send("%s [send:%s] [receive:%s]" % (client.remote_address[0], ','.join(client.sends_to), ','.join(client.receives)))
         else:
             self.log.warn("invalid command %s " % name)
             self.request.send("ERROR: invalid command\r\n")
@@ -86,7 +80,7 @@ class BrokerTCPServer(SocketServer.ForkingMixIn, SocketServer.TCPServer):
                     self.log.debug("send success to %s " % client.client_address[0])
                     client.request.send(data)
                 else:
-                    self.log.debug("send failed: client has no channell %s , has %s " % (chanell, ','.join(client.receives))
+                    self.log.debug("send failed: client has no channell %s , has %s " % (chanell, ','.join(client.receives)))
 
 def start(ip, port):
     logger = logging.getLogger("BrokerTCPServer")
