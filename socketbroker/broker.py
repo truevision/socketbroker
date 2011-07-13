@@ -60,6 +60,11 @@ class BrokerTCPHandler(SocketServer.StreamRequestHandler):
             self.log.debug("send %s " % value)
             self.sends_to.append(value)
             self.request.send("SUCCESS: send on channell %s \r\n" % value)
+        elif name.lower() == "info":
+            self.log.debug("info")
+            if value.lower() == 'clients':
+                for client in self.server.clients:
+                    self.request.send("%s [send:%s] [receive:%s]" % (client.remote_address[0], ','.join(client.sends_to), ','.join(client.receives))
         else:
             self.log.warn("invalid command %s " % name)
             self.request.send("ERROR: invalid command\r\n")
@@ -69,7 +74,7 @@ class BrokerTCPHandler(SocketServer.StreamRequestHandler):
         del self.server.clients[index]
         
 
-class BrokerTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+class BrokerTCPServer(SocketServer.ForkingMixIn, SocketServer.TCPServer):
     log = logging.getLogger("BrokerTCPServer")
     clients = []
     def send(self, data, chanells):
@@ -78,10 +83,10 @@ class BrokerTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
         for client in self.clients:
             for chanell in chanells:
                 if chanell in client.receives:
-                    self.log.debug("sent to %s " % client.client_address[0])
+                    self.log.debug("send success to %s " % client.client_address[0])
                     client.request.send(data)
                 else:
-                    self.log.debug("no chanells")
+                    self.log.debug("send failed: client has no channell %s , has %s " % (chanell, ','.join(client.receives))
 
 def start(ip, port):
     logger = logging.getLogger("BrokerTCPServer")
