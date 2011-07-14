@@ -68,7 +68,7 @@ class BrokerTCPHandler(SocketServer.StreamRequestHandler):
         del self.server.clients[index]
         
 
-class BrokerTCPServer(SocketServer.ForkingMixIn, SocketServer.TCPServer):
+class BrokerTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     log = logging.getLogger("BrokerTCPServer")
     clients = []
     def send(self, data, chanells):
