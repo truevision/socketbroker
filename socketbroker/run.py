@@ -28,12 +28,12 @@ def main():
             sys.exit(1)
         try:
             flashpolicy_server = flashpolicy.start(args.ip, dest_port = args.port)
+            flashpolicy_server.serve_forever()
         except:
-            broker.shutdown()
+            raise
+            broker_server.shutdown()
             logging.critical("bind to %s:%d failed " % (args.ip, 743))
             sys.exit(1)
-        while True: #ethernal loop
-            pass
     except KeyboardInterrupt as error:
         logging.info("Got CTRL+C, shutting down gracefully")
         broker_server.shutdown()

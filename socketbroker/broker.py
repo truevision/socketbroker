@@ -71,6 +71,7 @@ class BrokerTCPHandler(SocketServer.StreamRequestHandler):
 class BrokerTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     log = logging.getLogger("BrokerTCPServer")
     clients = []
+    allow_reuse_address = True
     def send(self, data, chanells):
 
         self.log.debug("send %s to %s " % (data, ','.join(chanells)))
@@ -88,7 +89,9 @@ def start(ip, port):
     server = BrokerTCPServer((ip, port), BrokerTCPHandler)
     logger.debug("creating server thread")
     server_thread = threading.Thread(target = server.serve_forever)
-    server_thread.setDaemon(True)
-    server_thread.start()
+    try:
+        server_thread.start()
+    except KeyboardInterrupt:
+        return
     logger.debug("server runnning in thread %s ", server_thread.getName())
     return server

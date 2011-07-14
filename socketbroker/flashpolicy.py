@@ -25,7 +25,7 @@ class FlashPolicyTCPHandler(SocketServer.BaseRequestHandler):
         self.log.debug("finished request")
 
 class FlashPolicyTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
-    pass
+    allow_reuse_address = True
 
 def start(ip, dest_port):
     logger = logging.getLogger("FlashPolicy.Server")
@@ -33,8 +33,4 @@ def start(ip, dest_port):
     server = FlashPolicyTCPServer((ip, 843), FlashPolicyTCPHandler)
     server.port = dest_port
     logger.debug("creating server thread")
-    server_thread = threading.Thread(target = server.serve_forever)
-    server_thread.setDaemon(True)
-    server_thread.start()
-    logger.debug("server runnning in thread %s ", server_thread.getName())
     return server    
